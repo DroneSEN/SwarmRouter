@@ -1,0 +1,26 @@
+# Compiled object files
+*.o
+
+# Executables
+*.exe
+*.out
+
+# Build directory
+/build/
+
+# Dependency files
+*.d
+
+# Editor-specific files
+.vscode/
+*.swp
+*.swo
+
+# macOS specific files
+.DS_Store
+
+# Linux specific files
+*~
+
+# Windows specific files
+Thumbs.db
