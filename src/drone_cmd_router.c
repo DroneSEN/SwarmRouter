@@ -8,6 +8,9 @@
 
 #include "drone_cmd_router.h"
 
+struct sockaddr sender_sock_addr_;
+socklen_t sender_sock_addr_len_;
+
 int route_commands()
 {
     /*
@@ -35,17 +38,17 @@ int route_commands()
     }
     printf("PI-PC Command socket created\n");
     
-    // Specify an address for the local PI-Drone socket
-    struct sockaddr_in local_pi_drone_command_sock_addr;
-    local_pi_drone_command_sock_addr.sin_family = AF_INET;
-    local_pi_drone_command_sock_addr.sin_port = htons(8889);
-    local_pi_drone_command_sock_addr.sin_addr.s_addr = pi_addr_drone_net;
-
     // Specify an address for the Drone socket used for control
     struct sockaddr_in remote_pi_drone_command_sock_addr;
     remote_pi_drone_command_sock_addr.sin_family = AF_INET;
     remote_pi_drone_command_sock_addr.sin_port = htons(8889);
     remote_pi_drone_command_sock_addr.sin_addr.s_addr = drone_addr;
+
+    // Specify an address for the local PI-Drone socket
+    struct sockaddr_in local_pi_drone_command_sock_addr;
+    local_pi_drone_command_sock_addr.sin_family = AF_INET;
+    local_pi_drone_command_sock_addr.sin_port = htons(8889);
+    local_pi_drone_command_sock_addr.sin_addr.s_addr = pi_addr_drone_net;
 
     // Specify an address for the local PI-PC socket
     struct sockaddr_in local_pi_pc_cmd_sock_addr;
@@ -81,17 +84,21 @@ int route_commands()
     // 3. Receive the response from the drone
     // 4. Send the response to the Control PC
 
+    // TODO: Use threads for better performance
+
     while(1)
     {
 
         // Receive a command from the Control PC
         char pc_command[50];
         ssize_t size_recv;
+
         // The receive shall be non blocking
         size_recv = recvfrom(pi_pc_command_socket, 
                             pc_command, sizeof(pc_command), 
                             MSG_DONTWAIT, 
-                            (struct sockaddr*)&remote_pi_pc_cmd_sock_addr, sizeof(remote_pi_pc_cmd_sock_addr));
+                            &sender_sock_addr_,
+                            &sender_sock_addr_len_);
 
         if(size_recv > 0) {
             printf("Received %d bytes from the Control PC\n", (int)size_recv);
@@ -107,7 +114,12 @@ int route_commands()
         char drone_response[50];
         ssize_t size_recv_drone;
         // The receive shall be non blocking
-        size_recv_drone = recvfrom(pi_drone_command_socket, drone_response, sizeof(drone_response), MSG_DONTWAIT, (struct sockaddr*)&remote_pi_drone_command_sock_addr, sizeof(remote_pi_drone_command_sock_addr));
+        size_recv_drone = recvfrom(pi_drone_command_socket, 
+                                    drone_response, 
+                                    sizeof(drone_response), 
+                                    MSG_DONTWAIT, 
+                                    &sender_sock_addr_, 
+                                    &sender_sock_addr_len_);
 
         if(size_recv_drone > 0) {
             printf("Received %d bytes from the drone\n", (int)size_recv_drone);
