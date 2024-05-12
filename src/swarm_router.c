@@ -73,7 +73,7 @@ int main() {
                             control_pc_addr, 
                             pi_addr_drone_net, 
                             pi_addr_control_net, 
-                            DRONE_STATE_PORT, 
+                            DRONE_VIDEO_PORT, 
                             "Drone",
                             "Control PC",
                             &drone_video_proxy);
