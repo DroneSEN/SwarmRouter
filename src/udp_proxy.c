@@ -15,16 +15,20 @@
  * [IN]  Address of device 2
  * [IN]  Host address on the same network as Device 1  
  * [IN]  Host address on the same network as Device 2
- * [IN]  Port on which the proxy will route packets
+ * [IN]  Port on which the Host and Device 1 communicate
+ * [IN]  Port on which the Host and Device 2 communicate
+ * [IN]  Name of device 1
+ * [IN]  Name of device 2
  * [OUT] Pointer to the UDP state structure
  */
-int create_udp_proxy(in_addr_t device1_addr, 
-                        in_addr_t device2_addr,
-                        in_addr_t host_addr_net_1,
-                        in_addr_t host_adrr_net_2,
-                        uint16_t port,
-                        char* device1_name,
-                        char* device2_name,
+int create_udp_proxy(const in_addr_t device1_addr, 
+                        const in_addr_t device2_addr,
+                        const in_addr_t host_addr_net_1,
+                        const in_addr_t host_adrr_net_2,
+                        const uint16_t device1_port,
+                        const uint16_t device2_port,
+                        const char* device1_name,
+                        const char* device2_name,
                         UDP_PROXY_STATE* udp_proxy)
 {
     // Save parameters in the UDP state structure
@@ -32,7 +36,8 @@ int create_udp_proxy(in_addr_t device1_addr,
     udp_proxy->device2_addr = device2_addr;
     udp_proxy->host_addr_net1 = host_addr_net_1;
     udp_proxy->host_addr_net2 = host_adrr_net_2;
-    udp_proxy->port = port;
+    udp_proxy->device1_port = device1_port;
+    udp_proxy->device2_port = device2_port;
 
     // Save the names
     strcpy(udp_proxy->device1_name, device1_name);
@@ -52,31 +57,31 @@ int create_udp_proxy(in_addr_t device1_addr,
 
     // Device 1 UDP socket
     udp_proxy->device1_sock_addr.sin_family = AF_INET;
-    udp_proxy->device1_sock_addr.sin_port = htons(port);
+    udp_proxy->device1_sock_addr.sin_port = htons(device1_port);
     udp_proxy->device1_sock_addr.sin_addr.s_addr = device1_addr;
 
     // Host UDP socket on network 1
     udp_proxy->host_net1_sock_addr.sin_family = AF_INET;
-    udp_proxy->host_net1_sock_addr.sin_port = htons(port);
+    udp_proxy->host_net1_sock_addr.sin_port = htons(device1_port);
     udp_proxy->host_net1_sock_addr.sin_addr.s_addr = host_addr_net_1;
 
     // Host UDP socket on network 2
     udp_proxy->device2_sock_addr.sin_family = AF_INET;
-    udp_proxy->device2_sock_addr.sin_port = htons(port);
+    udp_proxy->device2_sock_addr.sin_port = htons(device2_port);
     udp_proxy->device2_sock_addr.sin_addr.s_addr = device2_addr;
 
     // Device 2 UDP socket
     udp_proxy->host_net2_sock_addr.sin_family = AF_INET;
-    udp_proxy->host_net2_sock_addr.sin_port = htons(port);
+    udp_proxy->host_net2_sock_addr.sin_port = htons(device2_port);
     udp_proxy->host_net2_sock_addr.sin_addr.s_addr = host_adrr_net_2;
 
     // Bind the Device 1 and Host sockets
     if(bind(udp_proxy->host_device1_socket, (struct sockaddr*)&(udp_proxy->host_net1_sock_addr), sizeof(udp_proxy->host_net1_sock_addr)) < 0) {
-        printf("Error binding Host <---> %s socket to port %d\n", udp_proxy->device1_name, port);
+        printf("Error binding Host <---> %s socket to port %d\n", udp_proxy->device1_name, device1_port);
         return -1;
     }
 
-    printf("Successfuly binded Host <---> %s socket to port %d\n", udp_proxy->device1_name, port);
+    printf("Successfuly binded Host <---> %s socket to port %d\n", udp_proxy->device1_name, device1_port);
 
 
     // Create the Host <-> Device 2 socket
@@ -89,13 +94,13 @@ int create_udp_proxy(in_addr_t device1_addr,
 
     // Bind the Device 2 and Host sockets
     if(bind(udp_proxy->host_device2_socket, (struct sockaddr*)&(udp_proxy->host_net2_sock_addr), sizeof(udp_proxy->host_net2_sock_addr)) < 0) {
-        printf("Error binding Host <---> %s socket to port %d\n", udp_proxy->device2_name, port);
+        printf("Error binding Host <---> %s socket to port %d\n", udp_proxy->device2_name, device2_port);
         return -1;
     }
 
-    printf("Successfuly binded Host <---> %s socket to port %d\n", udp_proxy->device2_name, port);
+    printf("Successfuly binded Host <---> %s socket to port %d\n", udp_proxy->device2_name, device2_port);
 
-    printf("\nUDP Proxy between %s and %s on port %d has been successfuly configured !\n", device1_name, device2_name, port);
+    printf("\nUDP Proxy between %s:%d and %s:%d has been successfuly configured !\n\n", device1_name, device1_port, device2_name, device2_port);
 
     return 0;
 }

@@ -39,14 +39,16 @@ int main() {
     // Initialize addresses
     init_addresses();
 
-    // TEST ZONE
     int state;
 
     // Drone Commands proxy (Port 8889)
+    // Control PC   <---> Raspberry Pi <---> Drone  
+    // [8889]                                [8889]
     state = create_udp_proxy(drone_addr,
                             control_pc_addr, 
                             pi_addr_drone_net, 
                             pi_addr_control_net, 
+                            DRONE_CMD_PORT,
                             DRONE_CMD_PORT, 
                             "Drone",
                             "Control PC",
@@ -56,11 +58,14 @@ int main() {
         return EXIT_FAILURE;
 
     // Drone State proxy
+    // Control PC   <---> Raspberry Pi <---> Drone  
+    // [8890]                                [8890]
     state = create_udp_proxy(drone_addr,
                             control_pc_addr, 
                             pi_addr_drone_net, 
                             pi_addr_control_net, 
                             DRONE_STATE_PORT, 
+                            DRONE_STATE_PORT,
                             "Drone",
                             "Control PC",
                             &drone_state_proxy);
@@ -69,11 +74,14 @@ int main() {
         return EXIT_FAILURE;
 
     // Drone video proxy
+    // Control PC   <---> Raspberry Pi <---> Drone
+    // [11111]                               [11111]
     state = create_udp_proxy(drone_addr,
                             control_pc_addr, 
                             pi_addr_drone_net, 
                             pi_addr_control_net, 
                             DRONE_VIDEO_PORT, 
+                            DRONE_VIDEO_PORT,
                             "Drone",
                             "Control PC",
                             &drone_video_proxy);

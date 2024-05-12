@@ -25,8 +25,11 @@ typedef struct {
     // UDP socket between Host and Device 2
     int host_device2_socket;
 
-    // Port on which the proxy will transfer packets
-    uint16_t port;
+    // Port on which the Host and Device 1 communicate
+    uint16_t device1_port;
+
+    // Port on which the Host and Device 2 communicate
+    uint16_t device2_port;
 
     // Computed socket addresses
     struct sockaddr_in device1_sock_addr;
@@ -42,13 +45,27 @@ typedef struct {
 
 } UDP_PROXY_STATE;
 
-int create_udp_proxy(in_addr_t device1_addr, 
-                        in_addr_t device2_addr,
-                        in_addr_t host_addr_net_1,
-                        in_addr_t host_adrr_net_2,
-                        uint16_t port,
-                        char* device1_name,
-                        char* device2_name,
+/**
+ * Create the UDP proxy between device 1 and device 2
+ * 
+ * [IN]  Address of device 1
+ * [IN]  Address of device 2
+ * [IN]  Host address on the same network as Device 1  
+ * [IN]  Host address on the same network as Device 2
+ * [IN]  Port on which the Host and Device 1 communicate
+ * [IN]  Port on which the Host and Device 2 communicate
+ * [IN]  Name of device 1
+ * [IN]  Name of device 2
+ * [OUT] Pointer to the UDP state structure
+ */
+int create_udp_proxy(const in_addr_t device1_addr, 
+                        const in_addr_t device2_addr,
+                        const in_addr_t host_addr_net_1,
+                        const in_addr_t host_adrr_net_2,
+                        const uint16_t device1_port,
+                        const uint16_t device2_port,
+                        const char* device1_name,
+                        const char* device2_name,
                         UDP_PROXY_STATE* udp_proxy);
 
 void run_udp_proxy(UDP_PROXY_STATE* udp_proxy);
