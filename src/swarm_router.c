@@ -5,12 +5,13 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <linux/signal.h>
 
 // Configuration file
 #include "swarm_conf.h"
 
 #include "drone_cmd_router.h"
-
+#include "udp_proxy.h"
 
 /*
  * This program is used to forward the Tello state to the Control PC
@@ -23,90 +24,111 @@
  * - The network between the Raspberry Pi and the Control PC (Control Network)
 */
 
+UDP_PROXY_STATE drone_cmd_proxy;
+UDP_PROXY_STATE drone_state_proxy;
+UDP_PROXY_STATE drone_video_proxy;
+
 // Main function
 int main() {
+
+    // Child process PIDs
+    pid_t route_commands_pid;
+    pid_t route_state_pid;
+    pid_t route_video_pid;
 
     // Initialize addresses
     init_addresses();
 
-    // Start the subprocess for routing commands
-    route_commands();
+    // TEST ZONE
+    int state;
 
-    return EXIT_SUCCESS;
+    // Drone Commands proxy (Port 8889)
+    state = create_udp_proxy(drone_addr,
+                            control_pc_addr, 
+                            pi_addr_drone_net, 
+                            pi_addr_control_net, 
+                            DRONE_CMD_PORT, 
+                            "Drone",
+                            "Control PC",
+                            &drone_cmd_proxy);
 
-    // Tello State
+    if(state == -1)
+        return EXIT_FAILURE;
 
-    // Create a socket to receive incoming stream on port 8890 (Tello state)
-    // Create UDP socket
-    int rx_state_socket;
-    rx_state_socket = socket(AF_INET, SOCK_DGRAM, 0);
-    if (rx_state_socket == -1) {
-        printf("Error creating state socket\n");
-        return -1;
-    }
+    // Drone State proxy
+    state = create_udp_proxy(drone_addr,
+                            control_pc_addr, 
+                            pi_addr_drone_net, 
+                            pi_addr_control_net, 
+                            DRONE_STATE_PORT, 
+                            "Drone",
+                            "Control PC",
+                            &drone_state_proxy);
 
-    printf("Socket created\n");
+    if(state == -1)
+        return EXIT_FAILURE;
 
-    // Specify an address for the socket
-    struct sockaddr_in server_address;
-    server_address.sin_family = AF_INET;
-    server_address.sin_port = htons(8890);
-    server_address.sin_addr.s_addr = htonl(INADDR_ANY);
+    // Drone video proxy
+    state = create_udp_proxy(drone_addr,
+                            control_pc_addr, 
+                            pi_addr_drone_net, 
+                            pi_addr_control_net, 
+                            DRONE_STATE_PORT, 
+                            "Drone",
+                            "Control PC",
+                            &drone_video_proxy);
 
-    // Bind the socket to our specified IP and port
-    if(bind(rx_state_socket, (struct sockaddr*)&server_address, sizeof(server_address)) < 0) {
-        printf("Error binding state socket\n");
-        return -1;
-    }
+    if(state == -1)
+        return EXIT_FAILURE;
+
+    // Run proxies
     
-    printf("Bind to port 8890 done\n");
-
-    char buffer[3000];
-
-    int max_packets = 50;
-    int curr_packets = 0;
-
-    while(curr_packets < max_packets)
+    // Command proxy
+    route_commands_pid = fork();
+    if(route_commands_pid == 0)
     {
-        ssize_t nbytes = recvfrom(rx_state_socket, buffer, 3000, 0, NULL, NULL);
-
-        if(nbytes > 0)
-        {
-            fprintf(stdout, "Received %d bytes\n", (int)nbytes);
-
-            // Foward the packet to UDP server on Control PC
-            
-        }
-
-        curr_packets++;
-
+        run_udp_proxy(&drone_cmd_proxy);
+        return EXIT_SUCCESS;
     }
 
-    // // Forward the packet to the Control PC
-    // // Create a socket to send the state to the Control PC
-    // int tx_state_socket;
-    // tx_state_socket = socket(AF_INET, SOCK_DGRAM, 0);
-    // if (tx_state_socket == -1) {
-    //     printf("Error creating control socket\n");
-    //     return -1;
-    // }
+    // State proxy
+    route_state_pid = fork();
+    if(route_state_pid == 0)
+    {
+        run_udp_proxy(&drone_state_proxy);
+        return EXIT_SUCCESS;
+    }
 
-    // printf("Control socket created\n");
+    // Video proxy
+    route_video_pid = fork();
+    if(route_video_pid == 0)
+    {
+        run_udp_proxy(&drone_video_proxy);
+        return EXIT_SUCCESS;
+    }    
 
-    // // Specify an address for the socket
-    // struct sockaddr_in control_address;
-    // control_address.sin_family = AF_INET;
-    // control_address.sin_port = htons(8891);
-    // control_address.sin_addr.s_addr = drone_addr;
+    // Main program
+    // Continue parent process
+    
+    // Wait for user to press "s" to stop the program
+    printf("Press 's' to stop the program\n");
 
-    // // Send the state to the Control PC
-    // sendto(tx_state_socket, buffer, nbytes, 0, (struct sockaddr*)&control_address, sizeof(control_address));
+    char c;
+    while(1)
+    {
+        c = getchar();
+        if(c == 's')
+        {
+            printf("Stopping the program\n");
 
-    // printf("Forward %ld bytes to Control PC\n", nbytes);
-
-    // Close both sockets
-    close(rx_state_socket);
-    // close(tx_state_socket);
+            // Kill the subprocess
+            kill(route_commands_pid, SIGKILL);
+            kill(route_state_pid, SIGKILL);
+            kill(route_video_pid, SIGKILL);
+            
+            break;
+        }
+    }
 
     // Return success
     return EXIT_SUCCESS;
