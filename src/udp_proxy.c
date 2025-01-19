@@ -152,7 +152,7 @@ void run_udp_proxy(UDP_PROXY_STATE* udp_proxy)
 
             // Send the response to the Control PC
             ssize_t size_sent_pc;
-            size_sent_pc = sendto(udp_proxy->host_device2_socket, data_buffer, data_buffer_size, 0, (struct sockaddr*)&(udp_proxy->device2_sock_addr), sizeof(udp_proxy->device2_sock_addr));
+            size_sent_pc = sendto(udp_proxy->host_device1_socket, data_buffer, data_buffer_size, 0, (struct sockaddr*)&(udp_proxy->device1_sock_addr), sizeof(udp_proxy->device1_sock_addr));
         }
     }
 }
