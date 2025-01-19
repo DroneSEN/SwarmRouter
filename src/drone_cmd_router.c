@@ -17,7 +17,7 @@ int route_commands()
      * The following code is used to send a command to the drone
      * (Temporary code to test the connection between the Raspberry Pi and the drone)
      * 
-     *        Control PC   <---> Raspberry Pi <---> Drone   [Port:8889]
+     *        
      */
 
     // Create a UDP socket to send and receive commands to/from the drone

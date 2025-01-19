@@ -16,4 +16,6 @@ void init_addresses()
     pi_addr_drone_net = inet_addr(PI_IP_DRONE_NET);
     pi_addr_control_net = inet_addr(PI_IP_CONTROL_NET);
     control_pc_addr = inet_addr(CONTROL_PC_IP);
+
+    // TODO: Add configuration file to easily configure addresses and ports forwarding
 }
